@@ -10,5 +10,7 @@ terraform {
 }
 
 provider "kubernetes" {
-  config_path = var.kubeconfig_path
+  config_path            = var.kubeconfig_path
+  skip_credentials_validation = true
+  skip_region_validation      = true
 }
