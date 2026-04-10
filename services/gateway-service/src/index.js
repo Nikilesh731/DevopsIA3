@@ -147,6 +147,13 @@ app.put('/api/faults/recover', (req, res) => forwardJson(req, res, SERVICES.faul
 
 app.post('/api/simulations', (req, res) => forwardJson(req, res, SERVICES.simulation, '/simulate'));
 
+// NEW PRODUCTION SIMULATION ENDPOINTS
+app.post('/api/simulation/create', (req, res) => forwardJson(req, res, SERVICES.simulation, '/simulation/create'));
+app.post('/api/simulation/:id/run', (req, res) => forwardJson(req, res, SERVICES.simulation, `/simulation/${req.params.id}/run`));
+app.get('/api/simulation/:id/results', (req, res) => forwardJson(req, res, SERVICES.simulation, `/simulation/${req.params.id}/results`));
+app.get('/api/simulation/region/:regionId/status', (req, res) => forwardJson(req, res, SERVICES.simulation, `/simulation/region/${req.params.regionId}/status`));
+app.get('/api/simulations', (req, res) => forwardJson(req, res, SERVICES.simulation, '/simulations'));
+
 app.get('/api/events', (req, res) => forwardJson(req, res, SERVICES.eventBus, '/api/events'));
 app.post('/api/events', (req, res) => forwardJson(req, res, SERVICES.eventBus, '/api/events'));
 app.get('/api/events/stream', (req, res) => forwardJson(req, res, SERVICES.eventBus, '/api/events/stream'));
