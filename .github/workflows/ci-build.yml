@@ -11,10 +11,10 @@ jobs:
     name: Install Dependencies
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: "18"
 
@@ -52,10 +52,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: install
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: "18"
 
@@ -69,8 +69,17 @@ jobs:
           node -c services/gateway-service/src/index.js
           node -c simulation-service/src/utils/httpClient.js
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+      - name: Setup Terraform CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget gpg software-properties-common
+          wget -O- https://apt.releases.hashicorp.com/gpg | \
+            gpg --dearmor | \
+            sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /dev/null
+          echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | \
+            sudo tee /etc/apt/sources.list.d/hashicorp.list
+          sudo apt-get update
+          sudo apt-get install -y terraform
 
       - name: Validate Terraform configuration
         run: |
@@ -85,15 +94,15 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: "18"
 
       - name: Test event schemas validation
-        run: cd services/event-bus && npm install && npm test || true
+        run: cd services/event-bus && npm ci && npm test --if-present
 
       - name: Build frontend application
         run: |
@@ -111,17 +120,17 @@ jobs:
               throw new Error('Expected at least 15 event types');
             }
           })
-          " || true
+          "
 
   build-docker:
     name: Build Docker Images
     runs-on: ubuntu-latest
     needs: test
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Build service images
         run: |
@@ -141,7 +150,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-docker
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Start full stack with Docker Compose
         run: docker compose up -d --build
@@ -188,7 +197,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: integration-test
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Simulate deployment from compose stack
         run: |

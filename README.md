@@ -16,10 +16,10 @@ This is a production-grade distributed system for academic study in Distributed 
    npm install
    cd services/event-bus && npm install && cd ../../
    cd services/gateway-service && npm install && cd ../../
-   cd services/region-service && npm install && cd ../../
-   cd services/simulation-service && npm install && cd ../../
-   cd services/resource-service && npm install && cd ../../
-   cd services/fault-service && npm install && cd ../../
+   cd region-service && npm install && cd ../
+   cd simulation-service && npm install && cd ../
+   cd resource-service && npm install && cd ../
+   cd fault-service && npm install && cd ../
    cd frontend && npm install && cd ../
    ```
 
@@ -42,16 +42,16 @@ This is a production-grade distributed system for academic study in Distributed 
    cd services/gateway-service && npm start
 
    # Terminal 3: Region Service
-   cd services/region-service && npm start
+   cd region-service && npm start
 
    # Terminal 4: Simulation Service
-   cd services/simulation-service && npm start
+   cd simulation-service && npm start
 
    # Terminal 5: Resource Service
-   cd services/resource-service && npm start
+   cd resource-service && npm start
 
    # Terminal 6: Fault Service
-   cd services/fault-service && npm start
+   cd fault-service && npm start
 
    # Terminal 7: Frontend
    cd frontend && npm run dev
@@ -110,6 +110,43 @@ docker-compose logs -f
 ```bash
 kubectl apply -f infra/kubernetes/namespace.yaml
 kubectl apply -f infra/kubernetes/
+```
+
+Required setup before GitHub Actions production deployment:
+- Configure GitHub Actions secret `KUBE_CONFIG_DATA` as base64-encoded kubeconfig for your target cluster.
+- Ensure your cluster can pull images from GHCR and has permission for namespace `epidemic-system`.
+- Production workflow publishes images to `ghcr.io/<your-github-username-or-org>/<service>:<commit-sha>`.
+
+How to create `KUBE_CONFIG_DATA` on your machine:
+```bash
+base64 -w 0 ~/.kube/config
+```
+On macOS:
+```bash
+base64 ~/.kube/config | tr -d '\n'
+```
+On Windows PowerShell:
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("$HOME/.kube/config"))
+```
+
+Repository variable to enable registry push in production workflow:
+```text
+ENABLE_GHCR_PUSH=true
+```
+
+How to verify deployment from your side:
+```bash
+kubectl -n epidemic-system get pods
+kubectl -n epidemic-system get services
+kubectl -n epidemic-system rollout status deployment/gateway-service
+kubectl -n epidemic-system rollout status deployment/frontend
+```
+
+Optional quick health checks after port-forward:
+```bash
+kubectl -n epidemic-system port-forward svc/gateway-service 5000:5000
+curl http://localhost:5000/health
 ```
 
 ### Terraform (Infrastructure as Code)
