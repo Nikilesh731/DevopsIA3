@@ -2,7 +2,6 @@
   "name": "shared",
   "version": "1.0.0",
   "description": "Shared utilities, constants, schemas, and event contracts for the distributed epidemic system",
-  "type": "module",
   "main": "index.js",
   "exports": {
     "./events": "./events/eventTypes.js",
@@ -19,5 +18,8 @@
   ],
   "author": "",
   "license": "MIT",
-  "dependencies": {}
+  "dependencies": {
+    "pg": "^8.20.0",
+    "dotenv": "^16.6.1"
+  }
 }
