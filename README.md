@@ -1,4 +1,5 @@
-# Distributed Epidemic Simulation and Resource Allocation System
+# ##Distributed Epidemic Simulation and Resource Allocation System
+
 # Using Event-Driven Architecture and Fault Tolerance
 
 This is a production-grade distributed system for academic study in Distributed Computing and DevOps.
@@ -6,12 +7,14 @@ This is a production-grade distributed system for academic study in Distributed 
 ## 🎯 Quick Start
 
 ### Prerequisites
+
 - Node.js 18+
 - Docker & Docker Compose (for containerized deployment)
 
 ### Local Development
 
 1. **Install dependencies**
+
    ```bash
    npm install
    cd services/event-bus && npm install && cd ../../
@@ -22,18 +25,19 @@ This is a production-grade distributed system for academic study in Distributed 
    cd fault-service && npm install && cd ../
    cd frontend && npm install && cd ../
    ```
-
 2. **Set up environment**
+
    ```bash
    cp .env.example .env
    ```
-
 3. **Run all services locally (using docker-compose)**
+
    ```bash
    docker-compose up -d
    ```
 
    Or run individually:
+
    ```bash
    # Terminal 1: Event Bus
    cd services/event-bus && npm start
@@ -56,8 +60,8 @@ This is a production-grade distributed system for academic study in Distributed 
    # Terminal 7: Frontend
    cd frontend && npm run dev
    ```
-
 4. **Access the dashboard**
+
    - Frontend: http://localhost:3000
    - API Gateway: http://localhost:5000
    - Event Stream: http://localhost:5005/api/events/stream
@@ -65,6 +69,7 @@ This is a production-grade distributed system for academic study in Distributed 
 ## 📊 System Architecture
 
 ### Services (Microservices)
+
 - **Gateway Service** (port 5000): Unified API routing and request aggregation
 - **Region Service** (port 5001): Region management and connectivity
 - **Simulation Service** (port 5002): Epidemic progression engine
@@ -73,6 +78,7 @@ This is a production-grade distributed system for academic study in Distributed 
 - **Event Bus** (port 5005): Central event aggregation and logging
 
 ### Shared Infrastructure
+
 - **shared/**: Common events, constants, schemas, utilities
 - **frontend/**: React + Vite monitoring dashboard
 - **.github/workflows/**: CI/CD pipelines
@@ -81,6 +87,7 @@ This is a production-grade distributed system for academic study in Distributed 
 ## 🔄 Event-Driven Architecture
 
 All services communicate through a central event bus. Events include:
+
 - Region lifecycle: `region.created`, `region.updated`, `region.deleted`
 - Simulation: `simulation.started`, `simulation.day.advanced`, `simulation.completed`
 - Infection: `infection.detected`, `infection.updated`, `infection.spread`, `outbreak.declared`
@@ -101,41 +108,51 @@ See [docs/architecture/EVENT_CONTRACTS.md](docs/architecture/EVENT_CONTRACTS.md)
 ## 🚀 Deployment
 
 ### Docker Compose (Local)
+
 ```bash
 docker-compose up -d
 docker-compose logs -f
 ```
 
 ### Kubernetes (Production)
+
 ```bash
 kubectl apply -f infra/kubernetes/namespace.yaml
 kubectl apply -f infra/kubernetes/
 ```
 
 Required setup before GitHub Actions production deployment:
+
 - Configure GitHub Actions secret `KUBE_CONFIG_DATA` as base64-encoded kubeconfig for your target cluster.
 - Ensure your cluster can pull images from GHCR and has permission for namespace `epidemic-system`.
 - Production workflow publishes images to `ghcr.io/<your-github-username-or-org>/<service>:<commit-sha>`.
 
 How to create `KUBE_CONFIG_DATA` on your machine:
+
 ```bash
 base64 -w 0 ~/.kube/config
 ```
+
 On macOS:
+
 ```bash
 base64 ~/.kube/config | tr -d '\n'
 ```
+
 On Windows PowerShell:
+
 ```powershell
 [Convert]::ToBase64String([IO.File]::ReadAllBytes("$HOME/.kube/config"))
 ```
 
 Repository variable to enable registry push in production workflow:
+
 ```text
 ENABLE_GHCR_PUSH=true
 ```
 
 How to verify deployment from your side:
+
 ```bash
 kubectl -n epidemic-system get pods
 kubectl -n epidemic-system get services
@@ -144,12 +161,14 @@ kubectl -n epidemic-system rollout status deployment/frontend
 ```
 
 Optional quick health checks after port-forward:
+
 ```bash
 kubectl -n epidemic-system port-forward svc/gateway-service 5000:5000
 curl http://localhost:5000/health
 ```
 
 ### Terraform (Infrastructure as Code)
+
 ```bash
 cd infra/terraform
 terraform init
@@ -160,11 +179,13 @@ terraform apply
 ## 🧪 Testing & CI/CD
 
 The system includes automated CI/CD pipelines in `.github/workflows/`:
+
 - `ci-build.yml`: Build, lint, test, and deploy
 - `deploy-staging.yml`: Staging environment deployment
 - `deploy-production.yml`: Production deployment
 
 Run locally with GitHub Actions CLI:
+
 ```bash
 act -l
 act push
@@ -181,8 +202,9 @@ The system simulates disease spread using the SIR (Susceptible-Infected-Recovere
 - **Day-by-day progression**: Detailed step-through simulation results
 
 ### Sample Parameters
+
 - Infection Rate: 15% per day
-- Recovery Rate: 10% per day  
+- Recovery Rate: 10% per day
 - Mortality Rate: 2%
 - Total Simulation: 30-90 days
 - Regions: 5-10 interconnected regions
@@ -200,6 +222,7 @@ The system simulates disease spread using the SIR (Susceptible-Infected-Recovere
 ## 🛡️ Fault Tolerance
 
 The system demonstrates resilience patterns:
+
 - **Health Checks**: Periodic health monitoring of all services
 - **Retry Logic**: Exponential backoff retry strategy
 - **Circuit Breaker**: Prevent cascading failures
@@ -233,6 +256,7 @@ The system demonstrates resilience patterns:
 This system demonstrates:
 
 **Distributed Computing**
+
 - Microservice architecture
 - Asynchronous event-driven communication
 - Distributed state management
@@ -240,6 +264,7 @@ This system demonstrates:
 - Fault tolerance and resilience
 
 **DevOps**
+
 - Containerization (Docker)
 - Orchestration (Docker Compose, Kubernetes)
 - Infrastructure as Code (Terraform)
