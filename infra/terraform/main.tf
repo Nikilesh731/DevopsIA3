@@ -3,54 +3,54 @@ locals {
 
   app_specs = {
     "gateway-service" = {
-      image = "${local.image_prefix}gateway-service:${var.image_tag}"
-      port  = 5000
-      replicas = 2
+      image        = "${local.image_prefix}gateway-service:${var.image_tag}"
+      port         = 5000
+      replicas     = 2
       service_type = "ClusterIP"
       service_port = 5000
     }
     "region-service" = {
-      image = "${local.image_prefix}region-service:${var.image_tag}"
-      port  = 5001
-      replicas = 2
+      image        = "${local.image_prefix}region-service:${var.image_tag}"
+      port         = 5001
+      replicas     = 2
       service_type = "ClusterIP"
       service_port = 5001
     }
     "simulation-service" = {
-      image = "${local.image_prefix}simulation-service:${var.image_tag}"
-      port  = 5002
-      replicas = 2
+      image        = "${local.image_prefix}simulation-service:${var.image_tag}"
+      port         = 5002
+      replicas     = 2
       service_type = "ClusterIP"
       service_port = 5002
     }
     "resource-service" = {
-      image = "${local.image_prefix}resource-service:${var.image_tag}"
-      port  = 5003
-      replicas = 2
+      image        = "${local.image_prefix}resource-service:${var.image_tag}"
+      port         = 5003
+      replicas     = 2
       service_type = "ClusterIP"
       service_port = 5003
     }
     "fault-service" = {
-      image = "${local.image_prefix}fault-service:${var.image_tag}"
-      port  = 5004
-      replicas = 2
+      image        = "${local.image_prefix}fault-service:${var.image_tag}"
+      port         = 5004
+      replicas     = 2
       service_type = "ClusterIP"
       service_port = 5004
     }
     "event-bus" = {
-      image = "${local.image_prefix}event-bus:${var.image_tag}"
-      port  = 5005
-      replicas = 1
+      image        = "${local.image_prefix}event-bus:${var.image_tag}"
+      port         = 5005
+      replicas     = 1
       service_type = "ClusterIP"
       service_port = 5005
     }
     "frontend" = {
-      image = "${local.image_prefix}frontend:${var.image_tag}"
-      port  = 80
-      replicas = 2
+      image        = "${local.image_prefix}frontend:${var.image_tag}"
+      port         = 80
+      replicas     = 2
       service_type = "NodePort"
       service_port = 80
-      node_port = 30080
+      node_port    = 30080
     }
   }
 
