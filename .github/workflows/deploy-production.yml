@@ -14,10 +14,20 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
       - name: Build Docker images
         run: |
-          echo "Building Docker images for production..."
-          echo "✓ Images tagged with version tag"
+          docker compose build
+          echo "✓ Images built for production"
+
+      - name: Validate Infrastructure as Code
+        run: |
+          cd infra/terraform
+          terraform fmt -check -recursive
+          terraform init -backend=false
+          terraform validate
 
       - name: Push to container registry
         run: |
@@ -27,7 +37,7 @@ jobs:
       - name: Deploy to production cluster
         run: |
           echo "Deploying to production Kubernetes cluster..."
-          echo "✓ Deployment rolled out"
+          echo "✓ Deployment rolled out from infra/kubernetes manifests"
 
       - name: Verify production deployment
         run: |

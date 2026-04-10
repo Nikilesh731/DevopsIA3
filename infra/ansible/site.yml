@@ -1,0 +1,24 @@
+---
+- name: Deploy epidemic simulation stack with Docker Compose
+  hosts: epidemic
+  become: true
+  vars:
+    deploy_path: /opt/distributed-epidemic-system
+
+  tasks:
+    - name: Ensure deployment directory exists
+      ansible.builtin.file:
+        path: "{{ deploy_path }}"
+        state: directory
+        mode: "0755"
+
+    - name: Copy repository contents to the target host
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../.."
+        dest: "{{ deploy_path }}"
+        mode: preserve
+
+    - name: Start the stack with Docker Compose
+      ansible.builtin.command: docker compose up -d --build
+      args:
+        chdir: "{{ deploy_path }}"

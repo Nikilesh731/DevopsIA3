@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: epidemic-config
+  namespace: epidemic-system
+data:
+  NODE_ENV: production
+  GATEWAY_PORT: "5000"
+  REGION_PORT: "5001"
+  SIMULATION_PORT: "5002"
+  RESOURCE_PORT: "5003"
+  FAULT_PORT: "5004"
+  EVENT_BUS_PORT: "5005"
+  REGION_SERVICE_URL: http://region-service:5001
+  SIMULATION_SERVICE_URL: http://simulation-service:5002
+  RESOURCE_SERVICE_URL: http://resource-service:5003
+  FAULT_SERVICE_URL: http://fault-service:5004
+  EVENT_BUS_SERVICE_URL: http://event-bus:5005

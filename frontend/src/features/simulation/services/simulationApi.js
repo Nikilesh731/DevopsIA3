@@ -3,7 +3,7 @@ import { API_BASE_URLS } from '../../../constants/serviceConfig';
 
 export const runSimulation = async (regionId, spreadFactor) => {
   try {
-    const response = await apiClient.post(`${API_BASE_URLS.simulation}/simulate`, {
+    const response = await apiClient.post(`${API_BASE_URLS.simulation}/simulations`, {
       regionId: Number(regionId),
       spreadFactor: Number(spreadFactor)
     });

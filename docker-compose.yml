@@ -1,0 +1,85 @@
+services:
+  gateway-service:
+    build:
+      context: .
+      dockerfile: services/gateway-service/Dockerfile
+    env_file:
+      - .env
+    environment:
+      REGION_SERVICE_URL: http://region-service:5001
+      SIMULATION_SERVICE_URL: http://simulation-service:5002
+      RESOURCE_SERVICE_URL: http://resource-service:5003
+      FAULT_SERVICE_URL: http://fault-service:5004
+      EVENT_BUS_SERVICE_URL: http://event-bus:5005
+    ports:
+      - "5000:5000"
+    depends_on:
+      - region-service
+      - simulation-service
+      - resource-service
+      - fault-service
+      - event-bus
+
+  region-service:
+    build:
+      context: .
+      dockerfile: region-service/Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "5001:5001"
+
+  simulation-service:
+    build:
+      context: .
+      dockerfile: simulation-service/Dockerfile
+    env_file:
+      - .env
+    environment:
+      REGION_SERVICE_URL: http://region-service:5001
+      RESOURCE_SERVICE_URL: http://resource-service:5003
+      FAULT_SERVICE_URL: http://fault-service:5004
+    ports:
+      - "5002:5002"
+    depends_on:
+      - region-service
+      - resource-service
+      - fault-service
+
+  resource-service:
+    build:
+      context: .
+      dockerfile: resource-service/Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "5003:5003"
+
+  fault-service:
+    build:
+      context: .
+      dockerfile: fault-service/Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "5004:5004"
+
+  event-bus:
+    build:
+      context: .
+      dockerfile: services/event-bus/Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "5005:5005"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "3000:80"
+    depends_on:
+      - gateway-service

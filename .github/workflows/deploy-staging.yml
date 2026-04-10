@@ -13,15 +13,15 @@ jobs:
 
       - name: Build Docker images
         run: |
-          echo "Building Docker images for staging..."
-          echo "✓ Images tagged with 'staging' label"
+          docker compose build
+          echo "✓ Images built for staging"
 
       - name: Deploy to staging cluster
         run: |
           echo "Deploying to staging Kubernetes cluster..."
-          echo "Applying Kubernetes manifests:"
+          echo "Applying Kubernetes manifests from infra/kubernetes"
           echo "  - Namespace"
-          echo "  - ConfigMaps"
+          echo "  - ConfigMap"
           echo "  - Deployments"
           echo "  - Services"
           echo "✓ Deployment to staging complete"

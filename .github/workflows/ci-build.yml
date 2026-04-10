@@ -18,14 +18,19 @@ jobs:
         with:
           node-version: "18"
 
-      - name: Install root dependencies
-        run: npm install || true
+      - name: Install root dependencies if present
+        run: |
+          if [ -f package.json ]; then
+            npm install
+          else
+            echo "No root package.json found; skipping"
+          fi
 
       - name: Install event-bus dependencies
         run: cd services/event-bus && npm ci
 
       - name: Install gateway-service dependencies
-        run: cd services/gateway-service && npm ci
+        run: cd services/gateway-service && npm install
 
       - name: Install region-service dependencies
         run: cd services/region-service && npm ci
@@ -61,6 +66,18 @@ jobs:
           node -c shared/constants/servicePorts.js
           node -c services/event-bus/src/eventBus.js
           node -c services/event-bus/src/index.js
+          node -c services/gateway-service/src/index.js
+          node -c simulation-service/src/utils/httpClient.js
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Validate Terraform configuration
+        run: |
+          cd infra/terraform
+          terraform fmt -check -recursive
+          terraform init -backend=false
+          terraform validate
 
   test:
     name: Run Tests
@@ -76,6 +93,12 @@ jobs:
 
       - name: Test event schemas validation
         run: cd services/event-bus && npm install && npm test || true
+
+      - name: Build frontend application
+        run: |
+          cd frontend
+          npm ci
+          npm run build
 
       - name: Validate event types
         run: |
@@ -99,14 +122,18 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Build event-bus image
+      - name: Build service images
         run: |
-          cd services/event-bus
-          docker build -t event-bus:latest .
-          echo "Built event-bus image"
+          docker build -f services/gateway-service/Dockerfile -t epidemic/gateway-service:ci .
+          docker build -f region-service/Dockerfile -t epidemic/region-service:ci .
+          docker build -f simulation-service/Dockerfile -t epidemic/simulation-service:ci .
+          docker build -f resource-service/Dockerfile -t epidemic/resource-service:ci .
+          docker build -f fault-service/Dockerfile -t epidemic/fault-service:ci .
+          docker build -f services/event-bus/Dockerfile -t epidemic/event-bus:ci .
+          docker build -f frontend/Dockerfile -t epidemic/frontend:ci .
 
       - name: Verify Docker images
-        run: docker image ls
+        run: docker image ls epidemic
 
   integration-test:
     name: Integration Test
@@ -115,39 +142,45 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: "18"
+      - name: Start full stack with Docker Compose
+        run: docker compose up -d --build
 
-      - name: Start services
+      - name: Wait for service health endpoints
         run: |
-          cd services/event-bus
-          npm ci
-          npm start &
-          sleep 3
+          for endpoint in \
+            http://localhost:5000/health \
+            http://localhost:5001/health \
+            http://localhost:5002/health \
+            http://localhost:5003/health \
+            http://localhost:5004/health \
+            http://localhost:5005/health \
+            http://localhost:3000/; do
+            for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
+              if curl -fsS "$endpoint" > /dev/null; then
+                break
+              fi
+              sleep 5
+            done
+            curl -fsS "$endpoint" > /dev/null
+          done
 
-      - name: Test event-bus health
+      - name: Test gateway and frontend proxy routes
         run: |
-          curl -f http://localhost:5005/health || exit 1
-          echo "✓ Event bus health check passed"
+          curl -fsS http://localhost:5000/api/services
+          curl -fsS http://localhost:3000/api/services
+          curl -fsS http://localhost:3000/ > /dev/null
 
-      - name: Test POST event
+      - name: Test event bus endpoints
         run: |
+          curl -fsS http://localhost:5005/api/events/stream
           curl -X POST http://localhost:5005/api/events \
             -H "Content-Type: application/json" \
-            -d '{
-              "eventType": "system.alert",
-              "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'",
-              "data": {"message": "CI test event"}
-            }' \
-            -f || exit 1
-          echo "✓ Event publish test passed"
+            -d '{"eventType":"system.alert","timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'","data":{"message":"CI test event"}}' \
+            -f
 
-      - name: Test event stream
-        run: |
-          curl -f http://localhost:5005/api/events/stream || exit 1
-          echo "✓ Event stream test passed"
+      - name: Stop stack
+        if: always()
+        run: docker compose down -v
 
   deploy-simulation:
     name: Deploy Simulation (Local)
@@ -156,19 +189,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: "18"
-
-      - name: Deploy all services
+      - name: Simulate deployment from compose stack
         run: |
-          echo "✓ Deployment simulation completed"
+          echo "✓ Local deployment simulation completed"
           echo "In production, this would:"
-          echo "  1. Build and push Docker images to registry"
-          echo "  2. Deploy to Kubernetes cluster"
-          echo "  3. Run smoke tests"
-          echo "  4. Update DNS records"
+          echo "  1. Build and push Docker images to a registry"
+          echo "  2. Apply Kubernetes manifests from infra/kubernetes"
+          echo "  3. Validate Terraform definitions in infra/terraform"
+          echo "  4. Execute remote deployment automation with Ansible"
 
   summary:
     name: Build Summary

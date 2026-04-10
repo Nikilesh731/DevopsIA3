@@ -1,8 +1,14 @@
 const axios = require('axios');
 
+const SERVICE_URLS = {
+  region: process.env.REGION_SERVICE_URL || 'http://localhost:5001',
+  resource: process.env.RESOURCE_SERVICE_URL || 'http://localhost:5003',
+  fault: process.env.FAULT_SERVICE_URL || 'http://localhost:5004',
+};
+
 const getRegions = async () => {
   try {
-    const response = await axios.get('http://localhost:5001/api/regions');
+    const response = await axios.get(`${SERVICE_URLS.region}/api/regions`);
     return response.data.data;
   } catch (error) {
     throw new Error(`Failed to fetch regions: ${error.message}`);
@@ -11,7 +17,7 @@ const getRegions = async () => {
 
 const infectRegion = async (id, count) => {
   try {
-    const response = await axios.put(`http://localhost:5001/api/regions/${id}/infect`, {
+    const response = await axios.put(`${SERVICE_URLS.region}/api/regions/${id}/infect`, {
       count: count
     });
     return response.data.data;
@@ -22,7 +28,7 @@ const infectRegion = async (id, count) => {
 
 const allocateResource = async (regionId, regionName, type, quantity) => {
   try {
-    const response = await axios.post('http://localhost:5003/api/resources/allocate', {
+    const response = await axios.post(`${SERVICE_URLS.resource}/api/resources/allocate`, {
       regionId: regionId,
       regionName: regionName,
       type: type,
@@ -36,7 +42,7 @@ const allocateResource = async (regionId, regionName, type, quantity) => {
 
 const getServiceStatuses = async () => {
   try {
-    const response = await axios.get('http://localhost:5004/api/faults/status');
+    const response = await axios.get(`${SERVICE_URLS.fault}/api/faults/status`);
     return response.data.data.services;
   } catch (error) {
     throw new Error(`Failed to fetch service statuses: ${error.message}`);
