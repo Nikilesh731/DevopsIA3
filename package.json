@@ -1,0 +1,7 @@
+{
+  "name": "epidemic-simulation-system",
+  "version": "1.0.0",
+  "description": "Distributed epidemic simulation system with microservices architecture",
+  "type": "module",
+  "private": true
+}
