@@ -24,12 +24,38 @@ const DashboardPage = () => {
     fetchStats();
   }, []);
 
-  if (loading) return <div className="page-container">Loading dashboard...</div>;
-  if (error) return <div className="page-container">Error: {error}</div>;
+  if (loading) {
+    return (
+      <div className="page-container">
+        <p style={{ color: '#666', fontSize: '16px' }}>Loading dashboard...</p>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="page-container">
+        <p style={{ color: '#d32f2f', fontSize: '16px' }}>Error: {error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="page-container">
       <SectionHeader title="Dashboard Overview" />
+      
+      {stats?.initializing && (
+        <div style={{ 
+          padding: '12px', 
+          marginBottom: '16px', 
+          background: '#fff3cd', 
+          border: '1px solid #ffc107',
+          borderRadius: '4px',
+          color: '#856404'
+        }}>
+          ⚠️ Services are initializing... Data will update as services come online
+        </div>
+      )}
       
       <OverviewCards stats={stats} />
     </div>
