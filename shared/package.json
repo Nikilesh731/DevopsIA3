@@ -1,0 +1,23 @@
+{
+  "name": "shared",
+  "version": "1.0.0",
+  "description": "Shared utilities, constants, schemas, and event contracts for the distributed epidemic system",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    "./events": "./events/eventTypes.js",
+    "./constants": "./constants/servicePorts.js",
+    "./schemas": "./schemas/region.schema.js",
+    "./utils": "./utils/logger.js"
+  },
+  "keywords": [
+    "distributed",
+    "epidemic",
+    "simulation",
+    "shared",
+    "events"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {}
+}
