@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: gateway-service
-          image: epidemic/gateway-service:latest
+          image: distributed-epidemic-system-gateway-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5000
@@ -52,7 +52,7 @@ spec:
     spec:
       containers:
         - name: region-service
-          image: epidemic/region-service:latest
+          image: distributed-epidemic-system-region-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5001
@@ -83,7 +83,7 @@ spec:
     spec:
       containers:
         - name: simulation-service
-          image: epidemic/simulation-service:latest
+          image: distributed-epidemic-system-simulation-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5002
@@ -114,7 +114,7 @@ spec:
     spec:
       containers:
         - name: resource-service
-          image: epidemic/resource-service:latest
+          image: distributed-epidemic-system-resource-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5003
@@ -145,7 +145,7 @@ spec:
     spec:
       containers:
         - name: fault-service
-          image: epidemic/fault-service:latest
+          image: distributed-epidemic-system-fault-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5004
@@ -176,7 +176,7 @@ spec:
     spec:
       containers:
         - name: event-bus
-          image: epidemic/event-bus:latest
+          image: distributed-epidemic-system-event-bus:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5005
@@ -207,7 +207,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: epidemic/frontend:latest
+          image: distributed-epidemic-system-frontend:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
