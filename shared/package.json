@@ -2,6 +2,7 @@
   "name": "shared",
   "version": "1.0.0",
   "description": "Shared utilities, constants, schemas, and event contracts for the distributed epidemic system",
+  "type": "module",
   "main": "index.js",
   "exports": {
     "./events": "./events/eventTypes.js",

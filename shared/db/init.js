@@ -3,8 +3,11 @@
  * Run this once to set up all tables and indexes
  */
 
-const { Pool } = require('pg');
-require('dotenv').config();
+import { Pool } from 'pg';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+
+dotenv.config();
 
 const pool = new Pool({
   host: process.env.DB_HOST || 'localhost',
@@ -202,8 +205,9 @@ async function seedData(client) {
 }
 
 // Run if executed directly
-if (require.main === module) {
+const __filename = fileURLToPath(import.meta.url);
+if (process.argv[1] === __filename) {
   initializeDatabase().catch(console.error);
 }
 
-module.exports = { initializeDatabase };
+export { initializeDatabase };
