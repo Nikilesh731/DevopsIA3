@@ -1,4 +1,20 @@
 services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: epidemic_user
+      POSTGRES_PASSWORD: epidemic_password
+      POSTGRES_DB: epidemic_simulation
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U epidemic_user -d epidemic_simulation"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   gateway-service:
     build:
       context: .
@@ -6,6 +22,13 @@ services:
     env_file:
       - .env
     environment:
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: epidemic_user
+      DB_PASSWORD: epidemic_password
+      DB_NAME: epidemic_simulation
+      DATABASE_URL: postgresql://epidemic_user:epidemic_password@postgres:5432/epidemic_simulation
       REGION_SERVICE_URL: http://region-service:5001
       SIMULATION_SERVICE_URL: http://simulation-service:5002
       RESOURCE_SERVICE_URL: http://resource-service:5003
@@ -14,11 +37,18 @@ services:
     ports:
       - "5000:5000"
     depends_on:
-      - region-service
-      - simulation-service
-      - resource-service
-      - fault-service
-      - event-bus
+      postgres:
+        condition: service_healthy
+      region-service:
+        condition: service_started
+      simulation-service:
+        condition: service_started
+      resource-service:
+        condition: service_started
+      fault-service:
+        condition: service_started
+      event-bus:
+        condition: service_started
 
   region-service:
     build:
@@ -26,8 +56,19 @@ services:
       dockerfile: region-service/Dockerfile
     env_file:
       - .env
+    environment:
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: epidemic_user
+      DB_PASSWORD: epidemic_password
+      DB_NAME: epidemic_simulation
+      DATABASE_URL: postgresql://epidemic_user:epidemic_password@postgres:5432/epidemic_simulation
     ports:
       - "5001:5001"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   simulation-service:
     build:
@@ -36,15 +77,27 @@ services:
     env_file:
       - .env
     environment:
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: epidemic_user
+      DB_PASSWORD: epidemic_password
+      DB_NAME: epidemic_simulation
+      DATABASE_URL: postgresql://epidemic_user:epidemic_password@postgres:5432/epidemic_simulation
       REGION_SERVICE_URL: http://region-service:5001
       RESOURCE_SERVICE_URL: http://resource-service:5003
       FAULT_SERVICE_URL: http://fault-service:5004
     ports:
       - "5002:5002"
     depends_on:
-      - region-service
-      - resource-service
-      - fault-service
+      postgres:
+        condition: service_healthy
+      region-service:
+        condition: service_started
+      resource-service:
+        condition: service_started
+      fault-service:
+        condition: service_started
 
   resource-service:
     build:
@@ -52,8 +105,19 @@ services:
       dockerfile: resource-service/Dockerfile
     env_file:
       - .env
+    environment:
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: epidemic_user
+      DB_PASSWORD: epidemic_password
+      DB_NAME: epidemic_simulation
+      DATABASE_URL: postgresql://epidemic_user:epidemic_password@postgres:5432/epidemic_simulation
     ports:
       - "5003:5003"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   fault-service:
     build:
@@ -61,8 +125,19 @@ services:
       dockerfile: fault-service/Dockerfile
     env_file:
       - .env
+    environment:
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: epidemic_user
+      DB_PASSWORD: epidemic_password
+      DB_NAME: epidemic_simulation
+      DATABASE_URL: postgresql://epidemic_user:epidemic_password@postgres:5432/epidemic_simulation
     ports:
       - "5004:5004"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   event-bus:
     build:
@@ -70,8 +145,13 @@ services:
       dockerfile: services/event-bus/Dockerfile
     env_file:
       - .env
+    environment:
+      NODE_ENV: production
     ports:
       - "5005:5005"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   frontend:
     build:
@@ -83,3 +163,6 @@ services:
       - "3000:80"
     depends_on:
       - gateway-service
+
+volumes:
+  postgres_data:
