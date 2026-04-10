@@ -75,6 +75,7 @@ jobs:
       - name: Validate Terraform configuration
         run: |
           cd infra/terraform
+          rm -rf .terraform
           terraform fmt -check -recursive
           terraform init -backend=false
           terraform validate

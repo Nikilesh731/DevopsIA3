@@ -47,6 +47,16 @@ id_rsa.pub
 *.db
 *.db-journal
 
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
 # Editor / OS
 .DS_Store
 Thumbs.db
