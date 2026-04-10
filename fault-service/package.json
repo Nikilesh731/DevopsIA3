@@ -1,4 +1,5 @@
 {
+  "$schema": "./package.schema.json",
   "name": "fault-service",
   "version": "1.0.0",
   "description": "Fault simulation service for distributed epidemic system",
