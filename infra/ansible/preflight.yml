@@ -1,0 +1,65 @@
+---
+- name: Preflight checks for epidemic deployment (non-destructive)
+  hosts: epidemic
+  become: true
+  gather_facts: false
+  vars:
+    install_missing: false  # set to true to allow automatic installation (use with caution)
+
+  tasks:
+    - name: Check Ansible connectivity (ping)
+      ansible.builtin.ping:
+
+    - name: Check if SSH service is active
+      ansible.builtin.command: systemctl is-active ssh
+      register: ssh_active
+      changed_when: false
+      failed_when: false
+
+    - name: Check Docker presence (docker --version)
+      ansible.builtin.command: docker --version
+      register: docker_version
+      changed_when: false
+      failed_when: false
+
+    - name: Check for Docker socket
+      ansible.builtin.stat:
+        path: /var/run/docker.sock
+      register: docker_sock
+
+    - name: Check for docker compose plugin
+      ansible.builtin.command: docker compose version
+      register: compose_version
+      changed_when: false
+      failed_when: false
+
+    - name: Check UFW status (if present)
+      ansible.builtin.command: ufw status
+      register: ufw_status
+      changed_when: false
+      failed_when: false
+
+    - name: Summarize preflight results
+      ansible.builtin.debug:
+        msg: |
+          SSH active: {{ ssh_active.stdout | default('unknown') }}
+          Docker present: {{ docker_version.stdout | default('not found') }}
+          Docker socket exists: {{ docker_sock.stat.exists }}
+          Compose: {{ compose_version.stdout | default('not found') }}
+          UFW: {{ ufw_status.stdout | default('not found') }}
+
+    - name: Optionally install missing packages (Docker, openssh-server)
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - openssh-server
+        state: present
+        update_cache: yes
+      when: install_missing | bool
+
+    - name: Ensure docker service is enabled and started (if installed)
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+      when: install_missing | bool

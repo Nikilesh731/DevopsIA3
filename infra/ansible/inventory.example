@@ -1,2 +1,5 @@
 [epidemic]
-epidemic-host ansible_host=127.0.0.1 ansible_user=deploy
+# Replace the values below with your host's IP/hostname and SSH user/key.
+# Example:
+# epidemic-host ansible_host=203.0.113.10 ansible_user=ubuntu ansible_port=22 ansible_ssh_private_key_file=/home/nik/.ssh/id_rsa
+epidemic-host ansible_host=203.0.113.10 ansible_user=ubuntu ansible_port=22 ansible_ssh_private_key_file=/home/nik/.ssh/id_rsa

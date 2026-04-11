@@ -18,7 +18,8 @@
         dest: "{{ deploy_path }}"
         mode: preserve
 
-    - name: Start the stack with Docker Compose
-      ansible.builtin.command: docker compose up -d --build
-      args:
-        chdir: "{{ deploy_path }}"
+    - name: Start the stack with Docker Compose (Compose v2)
+      community.docker.docker_compose_v2:
+        project_src: "{{ deploy_path }}"
+        build: always
+        state: present

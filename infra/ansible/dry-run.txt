@@ -1,0 +1,10 @@
+
+PLAY [Deploy epidemic simulation stack with Docker Compose] ********************
+
+TASK [Gathering Facts] *********************************************************
+ok: [epidemic-host]
+
+TASK [Ensure deployment directory exists] **************************************
+changed: [epidemic-host]
+
+TASK [Copy repository contents to the target host] *****************************
