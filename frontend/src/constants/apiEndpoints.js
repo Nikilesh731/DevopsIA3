@@ -3,7 +3,12 @@
  * All backend API routes accessed through gateway
  */
 
-const API_BASE = import.meta.env.VITE_API_BASE || '/api';
+const normalizeGatewayBase = (value) => {
+  if (!value) return '';
+  return value.replace(/\/api\/?$/, '').replace(/\/$/, '');
+};
+
+const API_BASE = normalizeGatewayBase(import.meta.env.VITE_API_BASE);
 
 export const API_ENDPOINTS = {
   // Regions

@@ -3,7 +3,6 @@ import { API_BASE_URLS } from '../../../constants/serviceConfig';
 
 export const getDashboardStats = async () => {
   try {
-    // Set a timeout for all requests
     const timeoutPromise = new Promise((_, reject) => 
       setTimeout(() => reject(new Error('Request timeout')), 8000)
     );
@@ -34,16 +33,7 @@ export const getDashboardStats = async () => {
         servicesUp
       };
     } catch (error) {
-      console.warn('Some dashboard endpoints failed, using fallback data:', error.message);
-      
-      // Fallback data while services are initializing
-      return {
-        totalRegions: 28,
-        totalInfections: 0,
-        totalAllocations: 0,
-        servicesUp: 6,
-        initializing: true
-      };
+      throw new Error(`Failed to fetch dashboard stats: ${error.message}`);
     }
   } catch (error) {
     console.error('Dashboard stats error:', error);

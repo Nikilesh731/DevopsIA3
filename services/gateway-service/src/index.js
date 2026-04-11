@@ -23,35 +23,63 @@ const buildUrl = (baseUrl, path, search = '') => {
   return `${baseUrl.replace(/\/$/, '')}${normalizedPath}${search}`;
 };
 
+const fetchJsonWithTimeout = async (url, options = {}, timeoutMs = 5000) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
+
 const forwardJson = async (req, res, baseUrl, path) => {
-  const search = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '';
-  const targetUrl = buildUrl(baseUrl, path, search);
-  const response = await fetch(targetUrl, {
-    method: req.method,
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
-    body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body || {}),
-  });
+  try {
+    const search = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '';
+    const targetUrl = buildUrl(baseUrl, path, search);
+    const response = await fetchJsonWithTimeout(targetUrl, {
+      method: req.method,
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body || {}),
+    });
 
-  const contentType = response.headers.get('content-type') || '';
-  if (!response.ok) {
-    const errorBody = contentType.includes('application/json') ? await response.json().catch(() => ({})) : await response.text();
-    return res.status(response.status).json(typeof errorBody === 'string' ? { success: false, message: errorBody } : errorBody);
+    if (!response) {
+      return res.status(502).json({
+        success: false,
+        message: 'Upstream service did not respond',
+      });
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+    if (!response.ok) {
+      const errorBody = contentType.includes('application/json') ? await response.json().catch(() => ({})) : await response.text();
+      return res.status(response.status).json(typeof errorBody === 'string' ? { success: false, message: errorBody } : errorBody);
+    }
+
+    if (response.status === 204) {
+      return res.status(204).end();
+    }
+
+    if (contentType.includes('application/json')) {
+      const data = await response.json();
+      return res.status(response.status).json(data);
+    }
+
+    const text = await response.text();
+    return res.status(response.status).send(text);
+  } catch (error) {
+    return res.status(502).json({
+      success: false,
+      message: `Gateway could not reach upstream service: ${error.message}`,
+    });
   }
-
-  if (response.status === 204) {
-    return res.status(204).end();
-  }
-
-  if (contentType.includes('application/json')) {
-    const data = await response.json();
-    return res.status(response.status).json(data);
-  }
-
-  const text = await response.text();
-  return res.status(response.status).send(text);
 };
 
 const serviceHealth = async (name, url) => {
@@ -162,10 +190,18 @@ app.get('/api/events/:eventType', (req, res) => forwardJson(req, res, SERVICES.e
 app.get('/api/dashboard/summary', async (req, res) => {
   try {
     const [regionsResponse, allocationsResponse, faultsResponse] = await Promise.all([
-      fetch(`${SERVICES.region.replace(/\/$/, '')}/api/regions`),
-      fetch(`${SERVICES.resource.replace(/\/$/, '')}/api/resources/allocations`),
-      fetch(`${SERVICES.fault.replace(/\/$/, '')}/api/faults/status`),
+      fetchJsonWithTimeout(`${SERVICES.region.replace(/\/$/, '')}/api/regions`),
+      fetchJsonWithTimeout(`${SERVICES.resource.replace(/\/$/, '')}/api/resources/allocations`),
+      fetchJsonWithTimeout(`${SERVICES.fault.replace(/\/$/, '')}/api/faults/status`),
     ]);
+
+    if (!regionsResponse || !allocationsResponse || !faultsResponse) {
+      return res.status(502).json({ success: false, message: 'One or more services did not respond' });
+    }
+
+    if (!regionsResponse.ok || !allocationsResponse.ok || !faultsResponse.ok) {
+      return res.status(502).json({ success: false, message: 'One or more services returned an error' });
+    }
 
     const regionsPayload = await regionsResponse.json();
     const allocationsPayload = await allocationsResponse.json();

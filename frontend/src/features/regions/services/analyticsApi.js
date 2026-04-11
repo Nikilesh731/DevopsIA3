@@ -15,8 +15,7 @@ export const getRegionAnalytics = async () => {
     );
     return response.data.data || [];
   } catch (error) {
-    console.warn('Failed to fetch region analytics:', error.message);
-    return [];
+    throw new Error(`Failed to fetch region analytics: ${error.message}`);
   }
 };
 
@@ -27,7 +26,6 @@ export const getRegionsByPriority = async () => {
     );
     return response.data.data || [];
   } catch (error) {
-    console.warn('Failed to fetch priority regions:', error.message);
-    return [];
+    throw new Error(`Failed to fetch priority regions: ${error.message}`);
   }
 };

@@ -1,19 +1,19 @@
 const resourceModel = require('../models/resourceModel');
 
-const getInventory = () => {
-  return resourceModel.getInventory();
+const getInventory = async () => {
+  return await resourceModel.getInventory();
 };
 
-const getAllocations = () => {
-  return resourceModel.getAllocations();
+const getAllocations = async () => {
+  return await resourceModel.getAllocations();
 };
 
-const allocateResource = (regionId, regionName, type, quantity) => {
-  if (!regionId || !regionName || !type || !quantity) {
+const allocateResource = async (regionId, regionName, type, quantity) => {
+  if (!regionId || !type || !quantity) {
     throw new Error('All fields are required');
   }
   
-  return resourceModel.allocateResource(regionId, regionName, type, quantity);
+  return await resourceModel.allocateResource(regionId, regionName, type, quantity);
 };
 
 module.exports = {

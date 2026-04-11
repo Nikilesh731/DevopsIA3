@@ -76,6 +76,12 @@ class SimulationService {
       let peakDay = 0;
       let totalDeaths = 0;
       let dailyData = [];
+      let lastSnapshot = {
+        totalSusceptible: 0,
+        totalInfected: 0,
+        totalRecovered: 0,
+        totalDeaths: 0,
+      };
 
       // Day-by-day loop
       for (let day = 1; day <= sim.total_days; day++) {
@@ -90,9 +96,24 @@ class SimulationService {
 
         // Update each region
         for (const [regionId, region] of Object.entries(regionsMap)) {
-          const connectedRegions = region.connected_regions 
-            ? JSON.parse(region.connected_regions)
-            : [];
+          // Normalize connected_regions which may be stored as JSON array
+          // or a plain comma-separated string from older seeds.
+          let connectedRegions = [];
+          if (region.connected_regions) {
+            try {
+              const parsed = JSON.parse(region.connected_regions);
+              connectedRegions = Array.isArray(parsed) ? parsed : [parsed];
+            } catch (err) {
+              const cleaned = String(region.connected_regions).trim();
+              if (cleaned.includes(',')) {
+                connectedRegions = cleaned.split(',').map(s => s.trim()).filter(Boolean);
+              } else if (cleaned.length > 0) {
+                connectedRegions = [cleaned];
+              } else {
+                connectedRegions = [];
+              }
+            }
+          }
 
           // Simulate spread from connected regions (randomly select one)
           let spreadFromConnected = 0;
@@ -152,6 +173,7 @@ class SimulationService {
         }
 
         totalDeaths = daySnapshot.totalDeaths;
+        lastSnapshot = daySnapshot;
 
         // Store daily snapshot
         await this._storeDailyData(simulationId, day, daySnapshot);
@@ -175,8 +197,8 @@ class SimulationService {
       // Update simulation completion
       await this._updateSimulationCompletion(simulationId, {
         status: 'completed',
-        totalInfected: daySnapshot.totalInfected,
-        totalRecovered: daySnapshot.totalRecovered,
+        totalInfected: lastSnapshot.totalInfected,
+        totalRecovered: lastSnapshot.totalRecovered,
         totalDeaths,
         peakInfections,
         peakDay,
@@ -290,7 +312,7 @@ class SimulationService {
   async _updateSimulationStatus(simulationId, status, timestamp = null) {
     const query = `
       UPDATE simulations 
-      SET status = $1, ${timestamp ? 'started_at = $2,' : ''} updated_at = CURRENT_TIMESTAMP
+      SET status = $1${timestamp ? ', started_at = $2' : ''}
       WHERE id = ${timestamp ? '$3' : '$2'}
     `;
 
@@ -311,8 +333,7 @@ class SimulationService {
         total_deaths = $4,
         peak_infections = $5,
         peak_day = $6,
-        completed_at = CURRENT_TIMESTAMP,
-        updated_at = CURRENT_TIMESTAMP
+        completed_at = CURRENT_TIMESTAMP
       WHERE id = $7
     `;
 

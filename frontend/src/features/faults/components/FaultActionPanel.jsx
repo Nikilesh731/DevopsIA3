@@ -55,7 +55,36 @@ const FaultActionPanel = ({ onSuccess }) => {
   return (
     <div className="card">
       <h3>Service Fault Actions</h3>
-      {error && <div style={{ color: '#ef4444', marginBottom: '1rem' }}>{error}</div>}
+      {error && (
+        <div style={{ 
+          color: '#b45309', 
+          marginBottom: '1rem',
+          padding: '0.75rem',
+          backgroundColor: '#fef3c7',
+          borderRadius: '4px',
+          border: '1px solid #f59e0b',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <span>⚠️ {error}</span>
+          <button 
+            type="button"
+            onClick={() => setError('')}
+            style={{
+              background: '#f59e0b',
+              color: 'white',
+              border: 'none',
+              padding: '0.25rem 0.5rem',
+              borderRadius: '3px',
+              cursor: 'pointer',
+              fontSize: '12px'
+            }}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
       
       <div className="form-group">
         <label className="form-label">Select Service</label>

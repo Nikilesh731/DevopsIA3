@@ -9,15 +9,17 @@ COPY region-service/package*.json ./region-service/
 RUN cd region-service && npm install
 
 COPY region-service ./region-service
-COPY scripts/entrypoint.sh ./entrypoint.sh
-RUN chmod +x ./entrypoint.sh
 
 WORKDIR /app/region-service
 
 ENV NODE_ENV=production
 ENV PORT=5001
+ENV DB_HOST=postgres
+ENV DB_PORT=5432
+ENV DB_USER=epidemic_user
+ENV DB_PASSWORD=epidemic_password
+ENV DB_NAME=epidemic_simulation
 
 EXPOSE 5001
 
-ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["npm", "start"]

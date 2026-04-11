@@ -44,19 +44,6 @@ const DashboardPage = () => {
     <div className="page-container">
       <SectionHeader title="Dashboard Overview" />
       
-      {stats?.initializing && (
-        <div style={{ 
-          padding: '12px', 
-          marginBottom: '16px', 
-          background: '#fff3cd', 
-          border: '1px solid #ffc107',
-          borderRadius: '4px',
-          color: '#856404'
-        }}>
-          ⚠️ Services are initializing... Data will update as services come online
-        </div>
-      )}
-      
       <OverviewCards stats={stats} />
     </div>
   );

@@ -1,17 +1,4 @@
-/**
- * Region Model - Using In-Memory Storage
- * PostgreSQL integration can be added later with proper async/await setup
- */
-
-// Seed data - Initialize with demo regions
-let regions = [
-  { id: 1, name: 'North City', population: 500000, susceptible: 500000, infected: 0, recovered: 0, deaths: 0, risk_level: 'LOW', priority_score: 0, infection_ratio: 0, population_at_risk: 500000, resource_demand: 'LOW' },
-  { id: 2, name: 'Central Region', population: 750000, susceptible: 750000, infected: 5, recovered: 0, deaths: 0, risk_level: 'LOW', priority_score: 5.5, infection_ratio: 0.0067, population_at_risk: 755000, resource_demand: 'LOW' },
-  { id: 3, name: 'South District', population: 600000, susceptible: 588000, infected: 12, recovered: 0, deaths: 0, risk_level: 'MEDIUM', priority_score: 18.2, infection_ratio: 0.02, population_at_risk: 600000, resource_demand: 'MEDIUM' },
-  { id: 4, name: 'East Zone', population: 450000, susceptible: 442000, infected: 8, recovered: 0, deaths: 0, risk_level: 'LOW', priority_score: 12.1, infection_ratio: 0.0178, population_at_risk: 450000, resource_demand: 'LOW' },
-  { id: 5, name: 'West Province', population: 800000, susceptible: 800000, infected: 0, recovered: 0, deaths: 0, risk_level: 'LOW', priority_score: 0, infection_ratio: 0, population_at_risk: 800000, resource_demand: 'LOW' },
-];
-let nextId = 6;
+const { query } = require('../../../shared/db/database.cjs');
 
 /**
  * Calculate priority score for a region
@@ -46,49 +33,106 @@ const calculatePriorityScore = (region) => {
   };
 };
 
+const mapRegionRow = (row, allocationStats = {}) => {
+  const scores = calculatePriorityScore(row);
+
+  return {
+    id: row.id,
+    name: row.name,
+    population: row.population,
+    susceptible: row.susceptible,
+    infected: row.infected,
+    recovered: row.recovered,
+    deaths: row.deaths,
+    risk_level: row.risk_level,
+    latitude: row.latitude,
+    longitude: row.longitude,
+    region_type: row.region_type,
+    connected_regions: row.connected_regions,
+    last_update_day: row.last_update_day,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    priority_score: scores.priorityScore,
+    infection_ratio: scores.infectionRatio,
+    population_at_risk: scores.populationAtRisk,
+    resource_demand_level: scores.resourceDemand,
+    allocation_count: Number(allocationStats.allocation_count || 0),
+    total_resources_allocated: Number(allocationStats.total_resources_allocated || 0),
+  };
+};
+
+const getAllocationStats = async () => {
+  const result = await query(
+    `SELECT region_id, COUNT(*) AS allocation_count, COALESCE(SUM(quantity), 0) AS total_resources_allocated
+     FROM allocations
+     GROUP BY region_id`
+  );
+
+  return result.rows.reduce((accumulator, row) => {
+    accumulator[row.region_id] = row;
+    return accumulator;
+  }, {});
+};
+
 /**
  * Get all regions with analytics
  */
 const getAllRegions = async () => {
-  return regions.map(r => ({ ...r, ...calculatePriorityScore(r) })).sort((a, b) => b.priority_score - a.priority_score);
+  const [regionsResult, allocationStats] = await Promise.all([
+    query('SELECT * FROM regions ORDER BY id ASC'),
+    getAllocationStats(),
+  ]);
+
+  return regionsResult.rows
+    .map((row) => mapRegionRow(row, allocationStats[row.id] || {}))
+    .sort((a, b) => b.priority_score - a.priority_score);
 };
 
 /**
  * Get region by ID
  */
 const getRegionById = async (id) => {
-  const region = regions.find(r => r.id === parseInt(id));
-  return region ? { ...region, ...calculatePriorityScore(region) } : null;
+  const result = await query('SELECT * FROM regions WHERE id = $1', [id]);
+  if (result.rows.length === 0) {
+    return null;
+  }
+
+  const allocationStats = await getAllocationStats();
+  return mapRegionRow(result.rows[0], allocationStats[id] || {});
 };
 
 /**
  * Create a new region
  */
 const createRegion = async (name, population = 500000, latitude, longitude) => {
-  const region = {
-    id: nextId++,
-    name,
-    population,
-    susceptible: population,
-    infected: 0,
-    recovered: 0,
-    deaths: 0,
-    risk_level: 'LOW',
-    latitude,
-    longitude
-  };
-  regions.push(region);
-  const scores = calculatePriorityScore(region);
-  return { ...region, ...scores };
+  const result = await query(
+    `INSERT INTO regions
+     (name, population, susceptible, infected, recovered, deaths, risk_level, latitude, longitude, region_type, connected_regions, last_update_day)
+     VALUES ($1, $2, $3, 0, 0, 0, 'LOW', $4, $5, $6, $7, 0)
+     RETURNING *`,
+    [
+      name,
+      population,
+      population,
+      latitude ?? 0,
+      longitude ?? 0,
+      'State',
+      null,
+    ]
+  );
+
+  return mapRegionRow(result.rows[0]);
 };
 
 /**
  * Update infection count and recalculate priority
  */
 const updateInfectionCount = async (id, infectedCount) => {
-  const regionIndex = regions.findIndex(r => r.id === parseInt(id));
-  if (regionIndex === -1) return null;
-  
+  const existingRegion = await getRegionById(id);
+  if (!existingRegion) {
+    return null;
+  }
+
   let riskLevel = 'LOW';
   if (infectedCount > 150) {
     riskLevel = 'HIGH';
@@ -96,44 +140,36 @@ const updateInfectionCount = async (id, infectedCount) => {
     riskLevel = 'MEDIUM';
   }
 
-  regions[regionIndex].infected = infectedCount;
-  regions[regionIndex].risk_level = riskLevel;
-  const scores = calculatePriorityScore(regions[regionIndex]);
-  
-  return { ...regions[regionIndex], ...scores };
+  const susceptible = Math.max((existingRegion.population || 0) - infectedCount - (existingRegion.recovered || 0) - (existingRegion.deaths || 0), 0);
+
+  const result = await query(
+    `UPDATE regions
+     SET infected = $1,
+         susceptible = $2,
+         risk_level = $3,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE id = $4
+     RETURNING *`,
+    [infectedCount, susceptible, riskLevel, id]
+  );
+
+  const allocationStats = await getAllocationStats();
+  return mapRegionRow(result.rows[0], allocationStats[id] || {});
 };
 
 /**
  * Get regions sorted by priority
  */
 const getRegionsByPriority = async () => {
-  return regions.map(r => ({ ...r, ...calculatePriorityScore(r) }))
-    .sort((a, b) => b.priority_score - a.priority_score)
-    .slice(0, 10);
+  const regions = await getAllRegions();
+  return regions.slice(0, 10);
 };
 
 /**
  * Get analytics for all regions
  */
 const getRegionAnalytics = async () => {
-  return regions.map(r => {
-    const scores = calculatePriorityScore(r);
-    return {
-      id: r.id,
-      name: r.name,
-      population: r.population,
-      infected: r.infected,
-      susceptible: r.susceptible,
-      recovered: r.recovered,
-      deaths: r.deaths,
-      priority_score: scores.priorityScore,
-      infection_ratio: scores.infectionRatio,
-      population_at_risk: scores.populationAtRisk,
-      resource_demand_level: scores.resourceDemand,
-      allocation_count: 0,
-      total_resources_allocated: 0
-    };
-  }).sort((a, b) => b.priority_score - a.priority_score);
+  return getAllRegions();
 };
 
 module.exports = {

@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { createSimulation, runSimulation, getSimulations } from '../services/simulationApi';
-
-const INDIAN_REGIONS = [
-  'Delhi', 'Haryana', 'Punjab', 'Uttar Pradesh', 'West Bengal',
-  'Maharashtra', 'Tamil Nadu', 'Karnataka', 'Bihar', 'Andhra Pradesh'
-];
+import { createSimulation, runSimulation, getSimulationResults } from '../services/simulationApi';
+import { getRegions } from '../../regions/services/regionApi';
 
 const SimulationForm = ({ onSuccess }) => {
   const [regions, setRegions] = useState([]);
@@ -27,16 +23,10 @@ const SimulationForm = ({ onSuccess }) => {
 
   const fetchRegions = async () => {
     try {
-      const response = await fetch('/api/regions');
-      if (response.ok) {
-        const data = await response.json();
-        setRegions(data.data || INDIAN_REGIONS);
-      } else {
-        setRegions(INDIAN_REGIONS);
-      }
+      const data = await getRegions();
+      setRegions(data);
     } catch (err) {
-      console.error('Error fetching regions:', err);
-      setRegions(INDIAN_REGIONS);
+      setError(err.message);
     }
   };
 
@@ -55,27 +45,16 @@ const SimulationForm = ({ onSuccess }) => {
     setStage('running');
 
     try {
-      // Step 1: Create simulation
-      const createResponse = await fetch('/api/simulation/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sourceRegionId: parseInt(formData.sourceRegion),
-          infectionRate: parseFloat(formData.infectionRate),
-          recoveryRate: parseFloat(formData.recoveryRate),
-          mortalityRate: parseFloat(formData.mortalityRate),
-          totalDays: parseInt(formData.totalDays),
-          mobilityFactor: parseFloat(formData.mobilityFactor),
-        }),
+      const simData = await createSimulation({
+        sourceRegionId: parseInt(formData.sourceRegion),
+        infectionRate: parseFloat(formData.infectionRate),
+        recoveryRate: parseFloat(formData.recoveryRate),
+        mortalityRate: parseFloat(formData.mortalityRate),
+        totalDays: parseInt(formData.totalDays),
+        mobilityFactor: parseFloat(formData.mobilityFactor),
       });
 
-      if (!createResponse.ok) {
-        const errorData = await createResponse.json();
-        throw new Error(errorData.error || 'Failed to create simulation');
-      }
-
-      const simData = await createResponse.json();
-      const simulationId = simData.data.id;
+      const simulationId = simData.id;
 
       setCurrentSimulation({
         id: simulationId,
@@ -83,26 +62,11 @@ const SimulationForm = ({ onSuccess }) => {
         progress: 0,
       });
 
-      // Step 2: Run simulation
-      const runResponse = await fetch(`/api/simulation/${simulationId}/run`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
+      await runSimulation(simulationId);
 
-      if (!runResponse.ok) {
-        const errorData = await runResponse.json();
-        throw new Error(errorData.error || 'Failed to run simulation');
-      }
-
-      const runData = await runResponse.json();
-
-      // Step 3: Fetch results
-      const resultsResponse = await fetch(`/api/simulation/${simulationId}/results`);
-      if (resultsResponse.ok) {
-        const resultsData = await resultsResponse.json();
-        setStage('complete');
-        onSuccess(resultsData.data);
-      }
+      const resultsData = await getSimulationResults(simulationId);
+      setStage('complete');
+      onSuccess(resultsData);
     } catch (err) {
       setError(err.message);
       setStage('form');
@@ -131,7 +95,36 @@ const SimulationForm = ({ onSuccess }) => {
       
       {stage === 'form' && (
         <>
-          {error && <div style={{ color: '#ef4444', marginBottom: '1rem', padding: '0.5rem', backgroundColor: '#fee2e2', borderRadius: '4px' }}>{error}</div>}
+          {error && (
+            <div style={{ 
+              color: '#b45309', 
+              marginBottom: '1rem', 
+              padding: '0.75rem', 
+              backgroundColor: '#fef3c7', 
+              borderRadius: '4px',
+              border: '1px solid #f59e0b',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <span>⚠️ {error}</span>
+              <button 
+                type="button"
+                onClick={() => setError('')}
+                style={{
+                  background: '#f59e0b',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.25rem 0.5rem',
+                  borderRadius: '3px',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
           
           <form onSubmit={handleSubmit}>
             <div className="form-group">
@@ -144,9 +137,9 @@ const SimulationForm = ({ onSuccess }) => {
                 required
               >
                 <option value="">-- Select Region --</option>
-                {(regions || INDIAN_REGIONS).map((region, idx) => (
-                  <option key={idx} value={idx + 1}>
-                    {typeof region === 'string' ? region : region.name}
+                {(regions || []).map((region) => (
+                  <option key={region.id} value={region.id}>
+                    {region.name}
                   </option>
                 ))}
               </select>

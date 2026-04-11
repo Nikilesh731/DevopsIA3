@@ -18,7 +18,7 @@ const initializeServices = async () => {
   try {
     if (dbReady) return;
     
-    const dbModule = require('../../shared/db/database');
+    const dbModule = require('../../shared/db/database.cjs');
     dbQuery = dbModule.query;
     SimulationService = require('./services/simulationService');
     
@@ -66,18 +66,25 @@ app.post('/simulate', async (req, res) => {
   }
   
   try {
-    const { regionId, spreadFactor } = req.body;
-    
-    if (!regionId) {
+    const { regionId, sourceRegionId, spreadFactor, mobilityFactor } = req.body;
+    const simulationRegionId = sourceRegionId || regionId;
+
+    if (!simulationRegionId) {
       return res.status(400).json({ success: false, error: 'regionId is required' });
     }
-    
-    if (!spreadFactor || spreadFactor <= 0) {
-      return res.status(400).json({ success: false, error: 'spreadFactor is required and must be > 0' });
+
+    const resolvedMobilityFactor = mobilityFactor || spreadFactor || 1.0;
+
+    if (!resolvedMobilityFactor || resolvedMobilityFactor <= 0) {
+      return res.status(400).json({ success: false, error: 'mobilityFactor is required and must be > 0' });
     }
 
-    // For now, just return a placeholder response
-    res.json({ success: true, data: { message: 'Simulation initiated' } });
+    const simulation = await simService.createSimulation({
+      sourceRegionId: simulationRegionId,
+      mobilityFactor: resolvedMobilityFactor,
+    });
+
+    res.status(201).json({ success: true, data: simulation });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -146,9 +153,10 @@ app.post('/simulation/:id/run', async (req, res) => {
 
   try {
     const simulationId = parseInt(req.params.id);
+    const result = await simService.runSimulation(simulationId);
     res.json({
       success: true,
-      data: { id: simulationId, message: 'Simulation started' },
+      data: result,
     });
   } catch (error) {
     console.error('Error running simulation:', error);
@@ -167,9 +175,10 @@ app.get('/simulation/:id/results', async (req, res) => {
 
   try {
     const simulationId = parseInt(req.params.id);
+    const result = await simService.getSimulationResults(simulationId);
     res.json({
       success: true,
-      data: { id: simulationId, message: 'Simulation results' },
+      data: result,
     });
   } catch (error) {
     console.error('Error fetching results:', error);
@@ -188,9 +197,10 @@ app.get('/simulation/region/:regionId/status', async (req, res) => {
 
   try {
     const regionId = parseInt(req.params.regionId);
+    const result = await simService.getRegionSimulationStatus(regionId);
     res.json({
       success: true,
-      data: { regionId, message: 'Region simulation status' },
+      data: result,
     });
   } catch (error) {
     console.error('Error fetching region status:', error);

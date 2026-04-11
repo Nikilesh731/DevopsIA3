@@ -3,5 +3,8 @@
   "version": "1.0.0",
   "description": "Distributed epidemic simulation system with microservices architecture",
   "type": "module",
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "playwright": "^1.45.1"
+  }
 }

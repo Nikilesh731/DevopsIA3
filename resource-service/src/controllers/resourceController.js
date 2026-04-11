@@ -1,27 +1,27 @@
 const resourceService = require('../services/resourceService');
 
-const getInventory = (req, res) => {
+const getInventory = async (req, res) => {
   try {
-    const inventory = resourceService.getInventory();
+    const inventory = await resourceService.getInventory();
     res.json({ success: true, data: inventory });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-const getAllocations = (req, res) => {
+const getAllocations = async (req, res) => {
   try {
-    const allocations = resourceService.getAllocations();
+    const allocations = await resourceService.getAllocations();
     res.json({ success: true, data: allocations });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-const allocateResource = (req, res) => {
+const allocateResource = async (req, res) => {
   try {
     const { regionId, regionName, type, quantity } = req.body;
-    const result = resourceService.allocateResource(regionId, regionName, type, quantity);
+    const result = await resourceService.allocateResource(regionId, regionName, type, quantity);
     res.json({ success: true, data: result });
   } catch (error) {
     if (error.message === 'Resource type not found') {

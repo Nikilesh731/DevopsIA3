@@ -15,12 +15,7 @@ export const getRegions = async () => {
     );
     return response.data.data || [];
   } catch (error) {
-    console.warn('Failed to fetch regions:', error.message);
-    return [
-      { id: 1, name: 'Delhi', population: 30000000, infected: 0, recovered: 0, deaths: 0 },
-      { id: 2, name: 'Mumbai', population: 20000000, infected: 0, recovered: 0, deaths: 0 },
-      { id: 3, name: 'Bangalore', population: 12000000, infected: 0, recovered: 0, deaths: 0 },
-    ];
+    throw new Error(`Failed to fetch regions: ${error.message}`);
   }
 };
 
@@ -31,8 +26,7 @@ export const createRegion = async (regionData) => {
     );
     return response.data.data;
   } catch (error) {
-    console.warn('Failed to create region:', error.message);
-    return { id: Math.random(), ...regionData, infected: 0, recovered: 0, deaths: 0 };
+    throw new Error(`Failed to create region: ${error.message}`);
   }
 };
 
@@ -43,7 +37,6 @@ export const infectRegion = async (id, count) => {
     );
     return response.data.data;
   } catch (error) {
-    console.warn('Failed to infect region:', error.message);
-    return { id, infected: count };
+    throw new Error(`Failed to infect region: ${error.message}`);
   }
 };
